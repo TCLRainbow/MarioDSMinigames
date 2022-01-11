@@ -1,7 +1,11 @@
 <script src='picpoker.js'></script>
+<style>
+    html, body {
+                zoom: 117.5%;
+            }
+</style>
 
-
-<a href='https://www.mariowiki.com/Picture_Poker'>Full description of  this game</a>.
+<a href='https://www.mariowiki.com/Picture_Poker'>Full description of this game</a>.
 <h3>Hand order (Whoever has the higher pattern wins that amount of coins):</h3>
 <table>
     <tr>
@@ -32,3 +36,31 @@
 <h3>Symbol order (Left to right. If same pattern, the pattern which starts with a superior emoji wins):</h3>
 ⭐🍎🥒🌻🍄☁️
 <hr>
+
+<span style='font-size: large;'>Your current balance: <b id='bal'>10</b></span><br>
+<button id='bet button' onclick="addBet()">Bet</button>
+<span id='bet display'></span>(Max 5)
+<hr>
+
+<table>
+    <tr>
+        <td style='font-size: large;'>His cards:</td>
+        <td id='hand bot'></td>
+    </tr>
+    <tr>
+        <td style='font-size: large;'>Your cards: </td>
+        <td id='hand player'></td>
+    </tr>
+    <tr>
+        <td></td>
+        <td id='hold draw buttons'>
+            <button onclick="selectCard(event, 0)"></button>
+            <button onclick="selectCard(event, 1)"></button>
+            <button onclick="selectCard(event, 2)"></button>
+            <button onclick="selectCard(event, 3)"></button>
+            <button onclick="selectCard(event, 4)"></button>
+        </td>
+    </tr>
+</table>
+<h5>Click on the 5 buttons to hold/draw the corresponding card. (Black=Will be drawn)</h5>
+<button id='next' onclick="proceed(event)">Hold</button>

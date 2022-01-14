@@ -37,7 +37,7 @@
 ⭐🍎🥒🌻🍄☁️
 <hr>
 
-<span style='font-size: large;'>Your current balance: <b id='bal'>10</b></span><br>
+<span style='font-size: large;'>Your current balance: <b id='bal'></b> Win counter: <b id='win counter'></b></span><br>
 <button id='bet button' onclick="addBet()">Bet</button>
 <span id='bet display'></span>(Max 5)
 <hr>
@@ -46,10 +46,14 @@
     <tr>
         <td style='font-size: large;'>His cards:</td>
         <td id='hand bot'></td>
+        <td> > </td>
+        <td id='hand sorted bot'></td>
     </tr>
     <tr>
         <td style='font-size: large;'>Your cards: </td>
         <td id='hand player'></td>
+        <td> > </td>
+        <td id='hand sorted player'></td>
     </tr>
     <tr>
         <td></td>
@@ -63,4 +67,4 @@
     </tr>
 </table>
 <h5>Click on the 5 buttons to hold/draw the corresponding card. (Black=Will be drawn)</h5>
-<button id='next' onclick="proceed(event)">Hold</button>
+<button id='next' onclick="proceed(event)">Hold</button><span id='result'></span>

@@ -1,20 +1,10 @@
-var bal = 10;
-var bet = 0;
-var holdDraw = 0;
+var bal, bet, holdDraw;
 var win = 0
-var playerHand = new Array(5)
-var botHand = new Array(5);
+var playerHand = new Array(5), botHand = new Array(5)
+var ws = new WebSocket('ws' + document.location.origin.substring(4) + '/tables/picpoker/ws')
+ws.binaryType = "arraybuffer";
 const symbols = ['⭐', '🍎', '🥒', '🌻', '🍄', '☁️'];
 Object.seal(symbols);
-
-
-function newCard() {
-    return symbols[Math.floor(Math.random()*symbols.length)];
-} 
-
-function newHand(hand) {
-    [ ...Array(hand.length)].forEach((e, i) => hand[i] = newCard());
-}
 
 function addBet() {
     if (bet < 5 && bal > 0) {
@@ -22,38 +12,76 @@ function addBet() {
         bet++
         document.getElementById('bal').textContent = bal
         document.getElementById('bet display').textContent = '💰'.repeat(bet)
+        ws.send(new Uint8Array([32]))
     }
 }
 
-function initBet() {
-    if (win >= 20) bet = 5
-    else if (win >= 15) bet = 4
-    else if (win >= 10) bet = 3
-    else if (win >= 5) bet = 2
-    else bet = 1
-    bal -= bet
-    document.getElementById('bal').textContent = bal
-    document.getElementById('bet display').textContent = '💰'.repeat(bet)
-}
-
 function selectCard(e, i) {
-    let cmp = 1 << i
-    e.target.style.backgroundColor = holdDraw & cmp ? '' : 'black'
-    holdDraw ^= cmp
+    e.target.style.backgroundColor = holdDraw & i ? '' : 'black'
+    holdDraw ^= i
     document.getElementById('next').textContent = holdDraw == 0 ? 'Hold' : 'Draw'
 }
 
-function gameplay() {
-    bet = holdDraw = 0
-    initBet()
-    newHand(playerHand)
-    newHand(botHand)
+function unpack_hand(hand, symbolIDs) {
+    for (let i = 0; i < 5; i++) {
+        hand[i] = symbols[symbolIDs >> (12 - 3*i) & 7]
+    }
+}
+
+function reset() {
+    holdDraw = 0
     document.getElementById('next').textContent = 'Hold'
     document.getElementById('result').textContent = ''
     document.getElementById('win counter').textContent = win
     document.getElementById('hand sorted player').textContent = document.getElementById('hand sorted bot').textContent = ''
     document.getElementById('hand bot').textContent = '🃏 🃏 🃏 🃏 🃏'
-    document.getElementById('hand player').textContent = playerHand.join('')
+    if (win >= 20) bet = 5
+    else if (win >= 15) bet = 4
+    else if (win >= 10) bet = 3
+    else if (win >= 5) bet = 2
+    else bet = 1
+    document.getElementById('bet display').textContent = '💰'.repeat(bet)
+}
+
+function main() {
+    reset()
+    ws.onmessage = e => {
+        bal = 0
+        let a = new Uint8Array(e.data)
+        unpack_hand(playerHand, (a[0] << 8) + a[1])
+        for (let i = 2; i < a.length; i++) bal = (bal << 8) + a[i]
+        bal -= bet
+        document.getElementById('bal').textContent = bal
+        document.getElementById('hand player').textContent = playerHand.join('')
+    } 
+}
+
+function setResult(player, score) {
+    let result = ''
+    if (score == 1) {
+        if (player[0][1] == 5) score = 16
+        else if (player[0][1] == 4) score = 8
+        else if (player[0][1] == 3) {
+            if (player.length == 2) score = 6
+            else score = 4
+        }
+        else if (player.length == 2) score = 3
+        else score = 2
+        let increment = score * bet
+        result = `You win! (+${increment})`
+        win++
+        bal += increment
+    }
+    else if (score == 0) {
+        result = 'Draw!'
+        bal += bet
+    }
+    else {
+        result = 'You lose!'
+        if (win > 0) win--
+    }
+    document.getElementById('bal').textContent = bal
+    document.getElementById('result').textContent = result
 }
 
 function getHandPattern(hand) {
@@ -79,101 +107,42 @@ function getHandPattern(hand) {
     return r
 }
 
-// 2 2: Max pair of me vs max pair of bot. Recursive.
-// Streak 5: min bet 2. streak 10 min 3
-function compare(player, bot) {
-    let score = 0
-    let playerSym = symbols.indexOf(player[0][0]), botSym = symbols.indexOf(bot[0][0])
-    if (player.length == bot.length) {
-        if (player[0][1] > bot[0][1]) score = 1
-        else if (player[0][1] < bot[0][1]) score = -1
-        else {
-            if (playerSym > botSym) score = -1
-            else if (playerSym < botSym) score = 1
-        }
-        if (player.length == 2) {
-            playerSym = symbols.indexOf(player[1][0]), botSym = symbols.indexOf(bot[1][0])
-            if (playerSym > botSym) score = -1
-            else if (playerSym < botSym) score = 1
-        }
-    } else {
-        if (player[0][1] > bot[0][1]) score = 1
-        else if (player[0][1] < bot[0][1]) score = -1
-        else {
-            if (player.length == 2) score = 1
-            else score = -1
-        }
-    }
-    let result = ''
-    if (score == 1) {
-        if (player[0][1] == 5) score = 16
-        else if (player[0][1] == 4) score = 8
-        else if (player[0][1] == 3) {
-            if (player.length == 2) score = 6
-            else score = 4
-        }
-        else if (player.length == 2) score = 3
-        else score = 2
-        result = "You win!"
-        win++
-    }
-    else if (score == 0) result = 'Draw!'
-    else {
-        result = 'You lose!'
-        if (win > 0) win--
-    }
-    document.getElementById('result').textContent = result
-    return score
-}
-
 function proceed(event) {
     if (event.target.textContent == 'Proceed') {
-        gameplay()
+        ws.send(new Uint8Array([64]))
+        reset()
+        document.getElementById("bet button").style.visibility = "visible"
+        bal -= bet
+        document.getElementById('bal').textContent = bal
+        ws.onmessage = e => {
+            let a = new Uint8Array(e.data)
+            unpack_hand(playerHand, (a[0] << 8) + a[1])
+            document.getElementById('hand player').textContent = playerHand.join('')
+        }
         return
     }
 
-    let botPattern = getHandPattern(botHand)
-    if (botPattern[0][1] == 4) {
-        botHand.fill(botPattern[0][0], 0, 4)
-        botHand[4] = newCard()
-    }
-    else if (botPattern[0][1] == 3 && botPattern.length == 1) {
-        botHand.fill(botPattern[0][0], 0, 3)
-        botHand[3] = newCard()
-        botHand[4] = newCard()
-    }
-    else if (botPattern[0][1] == 2) {
-        if (botPattern.length == 2) {
-            botHand.fill(botPattern[0][0], 0, 2)
-            botHand.fill(botPattern[1][0], 2, 4)
-            botHand[4] = newCard()
-        } else {
-            botHand.fill(botPattern[0][0], 0, 2)
-            for (let i = 2; i < 5; i++) botHand[i] = newCard()
-        }
-    } else newHand(botHand)
-
-    if (event.target.textContent == 'Draw') {
-        for (let i = 0; i < playerHand.length; i++) {
-            if (holdDraw & 1 << i) playerHand[i] = newCard()
-        }
-        document.getElementById('hand player').textContent = playerHand.join('')   
-    }
-    document.getElementById('hand bot').textContent = botHand.join('')
-    let playerPattern = getHandPattern(playerHand)
-    for (let x of playerPattern) document.getElementById('hand sorted player').textContent += x[0].repeat(x[1])
-    botPattern = getHandPattern(botHand)
-    for (let x of botPattern) document.getElementById('hand sorted bot').textContent += x[0].repeat(x[1])
-    let score = compare(playerPattern, botPattern)
-    let increment = 0
-    if (score == 0) increment = bet
-    else if (score > 0) {
-        increment = score * bet
-        document.getElementById('result').textContent += `(+$${increment})`
-    }
-    bal += increment
+    ws.send(new Uint8Array([holdDraw]))
     for (let button of document.getElementById('hold draw buttons').children) button.style.backgroundColor = ''
     event.target.textContent = 'Proceed'
+    document.getElementById("bet button").style.visibility = "hidden"
+
+    ws.onmessage = e => {
+        let a = new Uint8Array(e.data)
+        unpack_hand(playerHand, (a[0] << 8) + a[1])
+        unpack_hand(botHand, (a[2] << 8) + a[3])
+        console.log(playerHand)
+        if (holdDraw != 0) document.getElementById('hand player').textContent = playerHand.join('')   
+        document.getElementById('hand bot').textContent = botHand.join('')
+        let playerPattern = getHandPattern(playerHand)
+        for (let x of playerPattern) document.getElementById('hand sorted player').textContent += x[0].repeat(x[1])
+        botPattern = getHandPattern(botHand)
+        for (let x of botPattern) document.getElementById('hand sorted bot').textContent += x[0].repeat(x[1])
+        let score = 0
+        if (a[0] >> 7) score = 1
+        else if (a[2] >> 7) score = -1
+        setResult(playerPattern, score)
+    }    
 }
 
-document.addEventListener("DOMContentLoaded", gameplay);
+document.addEventListener("DOMContentLoaded", main);

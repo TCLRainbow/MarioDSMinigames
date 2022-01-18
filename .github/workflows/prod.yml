@@ -23,7 +23,7 @@ jobs:
 
     - name: Force pull from main
       run: |
-        git switch production
+        git checkout production
         git reset --hard main
 
     - name: Remove File

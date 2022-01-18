@@ -23,7 +23,7 @@ jobs:
 
     - name: Force pull from main
       run: |
-        git fetch
+        git pull
         git checkout production
         git reset --hard main
 

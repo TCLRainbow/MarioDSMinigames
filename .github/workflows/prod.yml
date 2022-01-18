@@ -26,7 +26,6 @@ jobs:
         git fetch
         git checkout production
         git reset --hard main
-        git pull
 
     - name: Remove File
       uses: JesseTG/rm@v1.0.0

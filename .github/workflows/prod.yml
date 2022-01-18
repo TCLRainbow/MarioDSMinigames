@@ -22,6 +22,7 @@ jobs:
     # Checks-out your repository under $GITHUB_WORKSPACE, so auto-minify job can access it
     - uses: actions/checkout@v2
 
+    - name: Force pull from main
     - run: |
       git switch production
       git reset --hard main

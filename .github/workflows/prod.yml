@@ -23,9 +23,10 @@ jobs:
 
     - name: Force pull from main
       run: |
-        git pull
+        git fetch
         git checkout production
         git reset --hard main
+        git pull
 
     - name: Remove File
       uses: JesseTG/rm@v1.0.0

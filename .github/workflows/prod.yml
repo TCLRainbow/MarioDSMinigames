@@ -22,10 +22,9 @@ jobs:
     # Checks-out your repository under $GITHUB_WORKSPACE, so auto-minify job can access it
     - uses: actions/checkout@v2
 
-    - name: Auto Minify
-      uses: nizarmah/auto-minify@v2.1
-      with:
-        overwrite: true
+    - run: |
+      git switch production
+      git reset --hard main
 
     - name: Remove File
       uses: JesseTG/rm@v1.0.0
@@ -34,6 +33,11 @@ jobs:
           .github
           .gitignore
           *.md
+
+    - name: Auto Minify
+      uses: nizarmah/auto-minify@v2.1
+      with:
+        overwrite: true
 
     # Auto commits minified content to the existing files
     # Ignore it if you don't want to commit the files to the repository 

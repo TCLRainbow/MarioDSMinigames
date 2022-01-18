@@ -19,15 +19,6 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
 
-    - name: Remove File
-      uses: JesseTG/rm@v1.0.0
-      with:
-        path: |
-          .github
-          .gitignore
-          *.md
-
-
     # Checks-out your repository under $GITHUB_WORKSPACE, so auto-minify job can access it
     - uses: actions/checkout@v2
 
@@ -35,6 +26,14 @@ jobs:
       uses: nizarmah/auto-minify@v2.1
       with:
         overwrite: true
+
+    - name: Remove File
+      uses: JesseTG/rm@v1.0.0
+      with:
+        path: |
+          .github
+          .gitignore
+          *.md
 
     # Auto commits minified content to the existing files
     # Ignore it if you don't want to commit the files to the repository 

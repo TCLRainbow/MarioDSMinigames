@@ -48,3 +48,4 @@ jobs:
       with:
         commit_message: "Github Action: Auto Minified JS and CSS files"
         branch: production
+        push_options: '-f'
